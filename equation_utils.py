@@ -1,66 +1,48 @@
-from sympy import symbols, Eq, solve
-
-ELEMENTS = [
-    'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
-    'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca',
-    'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn',
-    'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr',
-    'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn',
-    'Sb', 'I', 'Te', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd',
-    'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb',
-    'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg',
-    'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th',
-    'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm',
-    'Md', 'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds',
-    'Rg', 'Cn', 'Uut', 'Uuq', 'Uup', 'Uuh', 'Uus', 'Uuo'
-]
-
-def generate_equation_for_element(compounds, coefficients, element):
-    equation = 0
-    for i, compound in enumerate(compounds):
-        if element in compound:
-            equation += coefficients[i] * compound[element]
-    return equation
-
-
-def build_equations(reactant_atoms, product_atoms):
-    reactant_coefficients = list(symbols(f'a0:{len(reactant_atoms)}'))
-    product_coefficients = list(symbols(f'b0:{len(product_atoms)}'))
+def split_before_uppercases(formula):
+    start = 0
+    end = 1
+    elements_lst = []
     
-    all_coefficients = reactant_coefficients + product_coefficients
+    if not formula:
+        return elements_lst
 
-    equations = []
-    for element in ELEMENTS:
-        lhs = generate_equation_for_element(reactant_atoms, reactant_coefficients, element)
-        rhs = generate_equation_for_element(product_atoms, product_coefficients, element)
-        if lhs != 0 or rhs != 0:
-            equations.append(Eq(lhs, rhs))
-
-    return equations, all_coefficients
-
-
-def my_solve(equations, all_coefficients):
-
-    if not all_coefficients:
-        return []
-        
-   
-    last_coefficient = all_coefficients[-1]
-    equations_to_solve = equations + [Eq(last_coefficient, 1)] 
+    while end < len(formula):
+        if formula[end].isupper():
+            elements_lst.append(formula[start:end])
+            start = end
+        end+=1  
+     
+    elements_lst.append(formula[start:])
     
-    solution = solve(equations_to_solve, all_coefficients)
+    return elements_lst
 
+def split_at_digit(formula):
+    for char_index, char in enumerate(formula):
+        if char.isdigit():
+            return formula[:char_index], int(formula[char_index:])
+    return formula, 1
 
-    if isinstance(solution, dict) and len(solution) == len(all_coefficients):
-        coefficient_values = []
-        for coefficient in all_coefficients:
-            value = solution.get(coefficient)
-            if value is None:
-                return None
-            coefficient_values.append(float(value))
-        return coefficient_values
-    else:
-        return None
+def count_atoms_in_molecule(molecular_formula):
+    atoms_count_dict = {}
+    for atom in split_before_uppercases(molecular_formula):
+        atom_name, atom_count = split_at_digit(atom)
+        atoms_count_dict[atom_name] = atoms_count_dict.get(atom_name, 0) + atom_count    
+    return atoms_count_dict
+
+def parse_chemical_reaction(reaction_equation):
+    """Takes a reaction equation (string) and returns reactants and products as lists.  
+    Example: 'H2 + O2 -> H2O' → (['H2', 'O2'], ['H2O'])"""
+    reaction_equation = reaction_equation.replace(" ", "")  # Remove spaces for easier parsing
+    reactants, products = reaction_equation.split("->")
+    return reactants.split("+"), products.split("+")
+
+def count_atoms_in_reaction(molecules_list):
+    """Takes a list of molecular formulas and returns a list of atom count dictionaries.  
+    Example: ['H2', 'O2'] → [{'H': 2}, {'O': 2}]"""
+    molecules_atoms_count = []
+    for molecule in molecules_list:
+        molecules_atoms_count.append(count_atoms_in_molecule(molecule))
+    return molecules_atoms_count
 
 
 
