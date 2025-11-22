@@ -45,7 +45,7 @@ def balance_reaction(equation_str):
         product_sum = generate_equation_for_element(products, p_coeffs, element)
         equations.append(sympy.Eq(reactant_sum, product_sum))
 
-    # Add a normalization equation: set one coefficient to 1
+    # Add a normalization equation: set the first reactant coefficient to 1 for initial solving
     if r_coeffs:
         equations.append(sympy.Eq(r_coeffs[0], 1))
     else:
@@ -77,26 +77,38 @@ def balance_reaction(equation_str):
     
     integer_numerators = [int(c) for c in scaled_coeffs]
 
-    non_zero_numerators = [abs(n) for n in integer_numerators if n != 0]
-
+    # Find GCD of all integer numerators to get the smallest integer coefficients
     gcd_val = 1
-    if non_zero_numerators:
-        gcd_val = non_zero_numerators[0]
-        for n in non_zero_numerators[1:]: # Fix: Iterate through remaining non-zero numerators
-            gcd_val = math.gcd(gcd_val, n)
+    if integer_numerators: # Ensure list is not empty before computing GCD
+        non_zero_numerators = [abs(n) for n in integer_numerators if n != 0]
+        if non_zero_numerators:
+            gcd_val = non_zero_numerators[0]
+            for n in non_zero_numerators[1:]:
+                gcd_val = math.gcd(gcd_val, n)
     
-    # Simplify integer coefficients by GCD
     simplified_integer_coeffs = [n // gcd_val for n in integer_numerators]
 
-    # Normalize by the last coefficient to match test expectations
-    if simplified_integer_coeffs and simplified_integer_coeffs[-1] != 0:
-        normalizer = simplified_integer_coeffs[-1]
-        final_coeffs = [sympy.Rational(n, normalizer) for n in simplified_integer_coeffs]
+    # Normalize by the coefficient of the LAST PRODUCT to match test expectations.
+    # If there are products, find the coefficient corresponding to the last product.
+    if num_products > 0:
+        normalizing_coeff_index = num_reactants + num_products - 1
+        normalizer = simplified_integer_coeffs[normalizing_coeff_index]
+
+        if normalizer != 0:
+            final_coeffs = [sympy.Rational(n, normalizer) for n in simplified_integer_coeffs]
+        else:
+            # Fallback if the normalizing coefficient is zero (should not happen for a balanced equation)
+            final_coeffs = [sympy.Rational(n, 1) for n in simplified_integer_coeffs]
+    elif num_reactants > 0:
+        # If no products, normalize by the first reactant's coefficient (already set to 1 initially)
+        # This branch ensures it handles cases where only reactants are present, though not typical for balancing.
+        normalizer = simplified_integer_coeffs[0]
+        if normalizer != 0:
+            final_coeffs = [sympy.Rational(n, normalizer) for n in simplified_integer_coeffs]
+        else:
+            final_coeffs = [sympy.Rational(n, 1) for n in simplified_integer_coeffs]
     else:
-        # Fallback if last coefficient is zero or list is empty (should ideally not happen for balanced eq)
-        final_coeffs = [sympy.Rational(n, 1) for n in simplified_integer_coeffs]
-    
+        # No reactants or products (should have been caught by earlier ValueError)
+        final_coeffs = [] 
+
     return final_coeffs
-
-
-
