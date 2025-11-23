@@ -20,7 +20,7 @@ def generate_equation_for_element(compounds, coefficients, element):
 """Generate symbolic equation representing atom balance for one element."""
 equation = 0
 for i, compound in enumerate(compounds):
-if element in compound:
+    if element in compound:
 equation += coefficients[i] * compound[element]
 return equation
 
@@ -41,7 +41,7 @@ equations = []
 for element in ELEMENTS:
 lhs = generate_equation_for_element(reactant_atoms, reactant_coefficients, element)
 rhs = generate_equation_for_element(product_atoms, product_coefficients, element)
-if lhs != 0 or rhs != 0:
+    if lhs != 0 or rhs != 0:
 equations.append(Eq(lhs, rhs))
 
 # return equations + all coefficients except the fixed b coefficient
@@ -54,7 +54,7 @@ def my_solve(equations, coefficients):
 solution = sympy_solve(equations, coefficients)
 
 # If number of solved vars does NOT match → incomplete solution
-if len(solution) != len(coefficients):
+    if len(solution) != len(coefficients):
 return None 
 
 result = []
